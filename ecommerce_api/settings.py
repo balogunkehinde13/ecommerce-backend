@@ -1,18 +1,42 @@
 from pathlib import Path
 from decouple import config
 from datetime import timedelta
+from decimal import Decimal
 import os
 
-# Base directory
+# -------------------------------------------------
+# BASE DIRECTORY
+# -------------------------------------------------
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Security
-SECRET_KEY = config('SECRET_KEY', default='django-insecure-change-this-in-production')
-DEBUG = config('DEBUG', default=True, cast=bool)
-ALLOWED_HOSTS = ['*']   # Accept all for development
 
-# Application definition
+# -------------------------------------------------
+# SECURITY SETTINGS
+# -------------------------------------------------
+
+# SECRET KEY (must be set in Render environment variables)
+SECRET_KEY = config('SECRET_KEY')
+
+# DEBUG:
+# - True locally
+# - False in production (Render)
+DEBUG = config('DEBUG', default=False, cast=bool)
+
+# Allowed hosts
+# Render provides its own domain, so we allow via env
+ALLOWED_HOSTS = config(
+    'ALLOWED_HOSTS',
+    default='localhost,127.0.0.1',
+    cast=lambda v: [s.strip() for s in v.split(',')]
+)
+
+
+# -------------------------------------------------
+# APPLICATION DEFINITION
+# -------------------------------------------------
+
 INSTALLED_APPS = [
+    # Django core
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -20,13 +44,13 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    # Third-party packages
+    # Third-party
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',
     'django_filters',
 
-    # Local apps (Our 5 Capstone Apps)
+    # Local apps (Capstone apps)
     'accounts',
     'products',
     'orders',
@@ -36,11 +60,12 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+
+    # WhiteNoise can be added later if needed
+    # 'whitenoise.middleware.WhiteNoiseMiddleware',
+
     'django.contrib.sessions.middleware.SessionMiddleware',
-
-    # Enables cross-origin requests (Frontend ↔ Backend)
     'corsheaders.middleware.CorsMiddleware',
-
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -50,10 +75,14 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'ecommerce_api.urls'
 
+
+# -------------------------------------------------
+# TEMPLATES
+# -------------------------------------------------
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],  # No templates needed yet
+        'DIRS': [],  # API-only project
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -68,15 +97,34 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'ecommerce_api.wsgi.application'
 
-# Database (SQLite for simplicity, can be upgraded later)
+
+# -------------------------------------------------
+# DATABASE CONFIGURATION
+# -------------------------------------------------
+
+# Local development → SQLite
+# Production (Render) → DATABASE_URL
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': config(
+        'DATABASE_URL',
+        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+        cast=config('DATABASE_URL', default=None) and None
+    )
 }
 
-# Authentication password validation
+# If DATABASE_URL is not set, fallback cleanly to SQLite
+if not config('DATABASE_URL', default=None):
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
+
+
+# -------------------------------------------------
+# PASSWORD VALIDATION
+# -------------------------------------------------
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -84,43 +132,43 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-# Internationalization
+
+# -------------------------------------------------
+# INTERNATIONALIZATION
+# -------------------------------------------------
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-# Static files
+
+# -------------------------------------------------
+# STATIC & MEDIA FILES
+# -------------------------------------------------
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# Media files (Images)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# ===========================
-# REST FRAMEWORK CONFIG
-# ===========================
 
+# -------------------------------------------------
+# DJANGO REST FRAMEWORK
+# -------------------------------------------------
 REST_FRAMEWORK = {
-    # JWT + Session Auth
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-        'rest_framework.authentication.SessionAuthentication',
     ],
 
-    # Default permission: Read-only for unauthenticated users
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticatedOrReadOnly',
     ],
 
-    # Pagination (10 items per page)
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 10,
 
-    # Filtering / Searching / Ordering
     'DEFAULT_FILTER_BACKENDS': [
         'django_filters.rest_framework.DjangoFilterBackend',
         'rest_framework.filters.SearchFilter',
@@ -128,10 +176,10 @@ REST_FRAMEWORK = {
     ],
 }
 
-# ==============================
-# JWT CONFIGURATION
-# ==============================
 
+# -------------------------------------------------
+# JWT CONFIGURATION
+# -------------------------------------------------
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
@@ -139,14 +187,15 @@ SIMPLE_JWT = {
     'BLACKLIST_AFTER_ROTATION': True,
 }
 
-# ==============================
-# CORS CONFIGURATION
-# ==============================
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",    # React
-    "http://localhost:8081",    # Vue / Mobile
-    "http://127.0.0.1:8000",    # API testing
-]
+# -------------------------------------------------
+# CORS CONFIGURATION
+# -------------------------------------------------
+
+CORS_ALLOWED_ORIGINS = config(
+    'CORS_ALLOWED_ORIGINS',
+    default='http://localhost:3000,http://localhost:8081,http://127.0.0.1:8000',
+    cast=lambda v: [s.strip() for s in v.split(',')]
+)
 
 CORS_ALLOW_CREDENTIALS = True

@@ -1,7 +1,8 @@
 from django.db import models
+from decimal import Decimal
 from django.contrib.auth.models import User
 from categories.models import Category
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 class Product(models.Model):
     """
@@ -15,7 +16,7 @@ class Product(models.Model):
     price = models.DecimalField(
         max_digits=10,
         decimal_places=2,
-        validators=[MinValueValidator(0.01)]  # Price must be > 0
+        validators=[MinValueValidator(Decimal('0.01'))]  # Price must be > 0
     )
 
     category = models.ForeignKey(
@@ -63,3 +64,65 @@ class Product(models.Model):
         True if stock quantity > 0
         """
         return self.stock_quantity > 0
+
+
+class Review(models.Model):
+    """
+    Represents a product review submitted by a user.
+    Each user can review a product only once.
+    """
+
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name='reviews'
+    )
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='reviews'
+    )
+
+    rating = models.IntegerField(
+        validators=[
+            MinValueValidator(1),
+            MaxValueValidator(5)
+        ]
+    )
+
+    comment = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        # Prevent duplicate reviews from the same user
+        unique_together = ('product', 'user')
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.product.name} - {self.rating}/5 by {self.user.username}"
+
+class Wishlist(models.Model):
+    """
+    Represents a product bookmarked by a user.
+    """
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='wishlist'
+    )
+
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name='wishlisted_by'
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        unique_together = ('user', 'product') 
+
+    def __str__(self):
+        return f"{self.user.username} → {self.product.name}"

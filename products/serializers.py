@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Product
+from .models import Product, Review, Wishlist
 from categories.serializers import CategorySerializer
 
 
@@ -85,3 +85,37 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
         if len(value) < 3:
             raise serializers.ValidationError("Product name must be at least 3 characters long.")
         return value
+
+class ReviewSerializer(serializers.ModelSerializer):
+    """
+    Serializer for product reviews.
+    """
+    username = serializers.CharField(
+        source='user.username',
+        read_only=True
+    )
+
+    class Meta:
+        model = Review
+        fields = [
+            'id',
+            'rating',
+            'comment',
+            'username',
+            'created_at'
+        ]
+        read_only_fields = ['id', 'username', 'created_at']
+
+class WishlistSerializer(serializers.ModelSerializer):
+    """
+    Serializer for wishlist items.
+    """
+    product_details = ProductSerializer(
+        source='product',
+        read_only=True
+    )
+
+    class Meta:
+        model = Wishlist
+        fields = ['id', 'product', 'product_details', 'created_at']
+        read_only_fields = ['id', 'created_at', 'product_details']

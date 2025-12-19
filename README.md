@@ -26,6 +26,67 @@ A comprehensive RESTful API built with Django and Django REST Framework for mana
 - Permission-based access control
 - CORS configuration for frontend integration
 
+# Authentication & Authorization
+
+This project uses **JSON Web Token (JWT)–based authentication** to secure the API and control access to protected resources.
+
+---
+
+## Authentication Method
+
+JWT authentication is implemented using **Django REST Framework SimpleJWT**.  
+When a user logs in with valid credentials, the server generates a signed access token. This token is included in subsequent API requests to verify the user’s identity.
+
+Tokens are sent using the standard HTTP header format:
+
+Authorization: Bearer <access_token>
+
+yaml
+Copy code
+
+The term **Bearer** indicates that any client presenting a valid token is authorized to access protected endpoints.
+
+---
+
+## Why JWT Was Chosen
+
+JWT authentication was selected because it:
+
+- Is **stateless**, making it scalable and suitable for REST APIs  
+- Works well with **frontend applications and mobile clients**  
+- Avoids **server-side session storage**  
+- Is widely adopted in **production-grade APIs**
+
+---
+
+## Authorization Rules
+
+The API uses permission classes to control access:
+
+- **Public access** is allowed for read-only endpoints  
+  (e.g., viewing products and categories)
+- **Authenticated access** is required for sensitive operations such as:
+  - Creating, updating, or deleting products  
+  - Managing carts and wishlists  
+  - Placing orders  
+  - Submitting product reviews  
+
+This is enforced using Django REST Framework permission classes such as:
+
+```python
+IsAuthenticated
+IsAuthenticatedOrReadOnly
+Security Considerations
+```
+Tokens have a limited lifespan and must be refreshed periodically
+
+Passwords are securely hashed using Django’s built-in authentication system
+
+Authentication logic is centralized, ensuring consistent security across all apps
+
+Summary
+By using JWT-based authentication with proper permission controls, the API ensures secure access to user-specific and sensitive resources while maintaining flexibility and scalability for future frontend or mobile integrations.
+
 ## 📋 Table of Contents
 
 - [Requirements](#requirements)
