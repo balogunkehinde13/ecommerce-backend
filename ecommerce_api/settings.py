@@ -2,6 +2,7 @@ from pathlib import Path
 from decouple import config
 from datetime import timedelta
 from decimal import Decimal
+import dj_database_url
 import os
 
 # -------------------------------------------------
@@ -60,9 +61,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-
-    # WhiteNoise can be added later if needed
-    # 'whitenoise.middleware.WhiteNoiseMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
 
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
@@ -105,12 +104,13 @@ WSGI_APPLICATION = 'ecommerce_api.wsgi.application'
 # Local development → SQLite
 # Production (Render) → DATABASE_URL
 DATABASES = {
-    'default': config(
-        'DATABASE_URL',
+    'default': dj_database_url.config(
         default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
-        cast=config('DATABASE_URL', default=None) and None
+        conn_max_age=600,
+        ssl_require=True
     )
 }
+
 
 # If DATABASE_URL is not set, fallback cleanly to SQLite
 if not config('DATABASE_URL', default=None):
@@ -147,6 +147,8 @@ USE_TZ = True
 # -------------------------------------------------
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
