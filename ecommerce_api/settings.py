@@ -18,6 +18,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECRET KEY (must be set in Render environment variables)
 SECRET_KEY = config('SECRET_KEY')
 
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
+
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = 'DENY'
+
+
+
 # DEBUG:
 # - True locally
 # - False in production (Render)
@@ -25,11 +34,14 @@ DEBUG = config('DEBUG', default=False, cast=bool)
 
 # Allowed hosts
 # Render provides its own domain, so we allow via env
-ALLOWED_HOSTS = config(
-    'ALLOWED_HOSTS',
-    default='localhost,127.0.0.1',
-    cast=lambda v: [s.strip() for s in v.split(',')]
-)
+if DEBUG:
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+else:
+    ALLOWED_HOSTS = config(
+        'ALLOWED_HOSTS',
+        cast=lambda v: [s.strip() for s in v.split(',')]
+    )
+
 
 
 # -------------------------------------------------
@@ -107,19 +119,10 @@ DATABASES = {
     'default': dj_database_url.config(
         default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
         conn_max_age=600,
-        ssl_require=True
+        ssl_require=not DEBUG
     )
 }
 
-
-# If DATABASE_URL is not set, fallback cleanly to SQLite
-if not config('DATABASE_URL', default=None):
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
-    }
 
 
 # -------------------------------------------------
@@ -194,10 +197,17 @@ SIMPLE_JWT = {
 # CORS CONFIGURATION
 # -------------------------------------------------
 
-CORS_ALLOWED_ORIGINS = config(
-    'CORS_ALLOWED_ORIGINS',
-    default='http://localhost:3000,http://localhost:8081,http://127.0.0.1:8000',
-    cast=lambda v: [s.strip() for s in v.split(',')]
-)
+if DEBUG:
+    CORS_ALLOWED_ORIGINS = [
+        "http://localhost:3000",
+        "http://localhost:8081",
+        "http://127.0.0.1:8000",
+    ]
+else:
+    CORS_ALLOWED_ORIGINS = config(
+        'CORS_ALLOWED_ORIGINS',
+        cast=lambda v: [s.strip() for s in v.split(',')]
+    )
+
 
 CORS_ALLOW_CREDENTIALS = True
