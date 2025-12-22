@@ -35,12 +35,17 @@ DEBUG = config('DEBUG', default=False, cast=bool)
 # Allowed hosts
 # Render provides its own domain, so we allow via env
 if DEBUG:
-    ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+    CORS_ALLOWED_ORIGINS = [
+        "http://localhost:3000",
+        "http://localhost:8081",
+        "http://127.0.0.1:8000",
+    ]
 else:
-    ALLOWED_HOSTS = config(
-        'ALLOWED_HOSTS',
+    CORS_ALLOWED_ORIGINS = config(
+        'CORS_ALLOWED_ORIGINS',
         cast=lambda v: [s.strip() for s in v.split(',')]
     )
+
 
 
 
