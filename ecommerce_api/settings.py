@@ -26,11 +26,18 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'
 
 
-
 # DEBUG:
 # - True locally
 # - False in production (Render)
 DEBUG = config('DEBUG', default=False, cast=bool)
+
+# ALLOWED HOSTS
+ALLOWED_HOSTS = config(
+    'ALLOWED_HOSTS',
+    default='localhost,127.0.0.1',
+    cast=lambda v: [s.strip() for s in v.split(',')]
+)
+
 
 # -------------------------------------------------
 # CORS CONFIGURATION
@@ -52,7 +59,13 @@ else:
 
 CORS_ALLOW_CREDENTIALS = True
 
-
+# CSRF Configuration for production
+if not DEBUG:
+    CSRF_TRUSTED_ORIGINS = config(
+        'CSRF_TRUSTED_ORIGINS',
+        default='',
+        cast=lambda v: [s.strip() for s in v.split(',') if s.strip()]
+    )
 
 
 # -------------------------------------------------
@@ -133,7 +146,6 @@ DATABASES = {
         ssl_require=not DEBUG
     )
 }
-
 
 
 # -------------------------------------------------
