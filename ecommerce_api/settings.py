@@ -32,8 +32,10 @@ X_FRAME_OPTIONS = 'DENY'
 # - False in production (Render)
 DEBUG = config('DEBUG', default=False, cast=bool)
 
-# Allowed hosts
-# Render provides its own domain, so we allow via env
+# -------------------------------------------------
+# CORS CONFIGURATION
+# -------------------------------------------------
+
 if DEBUG:
     CORS_ALLOWED_ORIGINS = [
         "http://localhost:3000",
@@ -41,10 +43,14 @@ if DEBUG:
         "http://127.0.0.1:8000",
     ]
 else:
+    # Default to empty list for backend-only deployment
     CORS_ALLOWED_ORIGINS = config(
         'CORS_ALLOWED_ORIGINS',
-        cast=lambda v: [s.strip() for s in v.split(',')]
+        default='',
+        cast=lambda v: [s.strip() for s in v.split(',') if s.strip()]
     )
+
+CORS_ALLOW_CREDENTIALS = True
 
 
 
@@ -196,23 +202,3 @@ SIMPLE_JWT = {
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
 }
-
-
-# -------------------------------------------------
-# CORS CONFIGURATION
-# -------------------------------------------------
-
-if DEBUG:
-    CORS_ALLOWED_ORIGINS = [
-        "http://localhost:3000",
-        "http://localhost:8081",
-        "http://127.0.0.1:8000",
-    ]
-else:
-    CORS_ALLOWED_ORIGINS = config(
-        'CORS_ALLOWED_ORIGINS',
-        cast=lambda v: [s.strip() for s in v.split(',')]
-    )
-
-
-CORS_ALLOW_CREDENTIALS = True
